@@ -17,7 +17,6 @@ To run the code, you must first download a dataset. This pipeline is designed to
 
 Please ensure your downloaded data is placed in the expected directory structure before proceeding to the training step.
 
------
 
 ##  Usage: Training and Evaluation
 
