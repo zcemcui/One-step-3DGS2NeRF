@@ -1,5 +1,3 @@
-That's a great start to your `README`\! Here is the extended section incorporating the data requirement and the specific commands for training and evaluation.
-
 -----
 
 ## Getting Started: Setup and Installation
