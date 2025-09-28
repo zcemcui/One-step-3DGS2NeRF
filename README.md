@@ -4,7 +4,7 @@ This repository extends the original **3D Gaussian Splatting (3DGS)** framework 
 
 ---
 
-## 📥 Getting Started: Setup and Installation
+## Getting Started: Setup and Installation
 
 ### 1. Download the Repository
 
@@ -13,3 +13,10 @@ Since this project builds directly on the 3DGS structure, clone your repository 
 ```bash
 git clone [https://github.com/zcemcui/One-step-3DGS2NeRF.git](https://github.com/zcemcui/One-step-3DGS2NeRF.git)
 cd One-step-3DGS2NeRF
+
+
+### 1. Download the Repository
+
+To run the respository simply do
+
+python 
