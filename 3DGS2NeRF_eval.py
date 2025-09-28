@@ -11,42 +11,42 @@ import imageio
 import plyfile
 import time
 
-# --- 1. 配置区域 ---
-# 请在此处确认所有路径和参数
+# --- 1. Configuration Area ---
+# Please confirm all paths and parameters here
 
-# 要评估的场景列表 (程序会自动检查路径是否存在，并跳过无效条目如 .txt 文件)
+# List of scenes to evaluate (The script will automatically check if paths exist and skip invalid entries like .txt files)
 SCENES_TO_EVALUATE = [
     'stump',
 ]
 
-# 各个部分的父目录路径
+# Parent directory paths for different components
 DATASET_PARENT_DIR = "/home/chz/360_v2"
 G3DGS_PARENT_DIR = "/home/chz/3DGS/gaussian-splatting/output"
 NERF_PARENT_DIR = "/home/chz/3DGS/gaussian-splatting/nerf_outputs"
-EVAL_PARENT_DIR = "eval_renders_maxresolution" # 渲染结果将保存在当前目录下的这个文件夹
+EVAL_PARENT_DIR = "eval_renders_maxresolution" # Render results will be saved in this folder within the current directory
 
-# 默认参数
+# Default parameters
 DOWNSCALE_FACTOR = 8
 G3DGS_ITERATION = 30000
 CHUNK_SIZE = 1024 * 4
 N_SAMPLES = 64
 
 
-# --- 2. 导入依赖库 ---
+# --- 2. Import Dependencies ---
 try:
     from piqa import PSNR, SSIM, LPIPS
     import tinycudann as tcnn
     from scene import Scene, GaussianModel
     from gaussian_renderer import render as render_3dgs
     from utils.system_utils import searchForMaxIteration
-    print("✅ 所有依赖库加载成功。")
+    print("✅ All dependencies loaded successfully.")
 except ImportError as e:
-    print(f"❌ 依赖库加载失败: {e}")
-    print("请确保已安装所有必需的库 (piqa, tinycudann 等) 并且脚本位于 3DGS 项目根目录。")
+    print(f"❌ Dependency loading failed: {e}")
+    print("Please ensure all required libraries (piqa, tinycudann, etc.) are installed and the script is located in the 3DGS project root directory.")
     exit(1)
 
 
-# --- 3. NeRF 模型和渲染函数 (无改动) ---
+# --- 3. NeRF Model and Rendering Functions (No change) ---
 class InstantNGPModel(torch.nn.Module):
     def __init__(self, bounding_box_size=4.0):
         super().__init__()
@@ -106,10 +106,10 @@ def render_rays_nerf(nerf_model, rays_o, rays_d, near, far, n_samples):
     rgb_map = rgb_map + (1. - acc_map[..., None])
     return rgb_map
 
-# --- 4. 定义三个阶段的执行函数 ---
+# --- 4. Define Execution Functions for Three Stages ---
 
 def run_stage1_render_3dgs(args):
-    print("\n--- STAGE 1: 渲染 3DGS (Ground Truth) 图像 ---")
+    print("\n--- STAGE 1: Rendering 3DGS (Ground Truth) Images ---")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     Path(args.gt_folder).mkdir(parents=True, exist_ok=True)
     gaussians = GaussianModel(sh_degree=3)
@@ -142,7 +142,7 @@ def run_stage1_render_3dgs(args):
     print(f"✅ Stage 1 complete. GT images saved to: {args.gt_folder}")
 
 def run_stage2_render_nerf(args):
-    print("\n--- STAGE 2: 渲染 NeRF (Prediction) 图像 ---")
+    print("\n--- STAGE 2: Rendering NeRF (Prediction) Images ---")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     Path(args.pred_folder).mkdir(parents=True, exist_ok=True)
     nerf_checkpoint = torch.load(args.nerf_model_path, map_location=device)
@@ -185,13 +185,13 @@ def run_stage2_render_nerf(args):
     print(f"✅ Stage 2 complete. Prediction images saved to: {args.pred_folder}")
 
 def run_stage3_compare(args):
-    print("\n--- STAGE 3: 对比图像并计算指标 ---")
+    print("\n--- STAGE 3: Comparing Images and Calculating Metrics ---")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     psnr_metric, ssim_metric, lpips_metric = PSNR().to(device), SSIM().to(device), LPIPS(network='alex').to(device)
     psnr_scores, ssim_scores, lpips_scores = [], [], []
     gt_images = sorted(list(Path(args.gt_folder).glob("*.png")))
     if not gt_images:
-        print(f"❌ 错误: 在 GT 文件夹 {args.gt_folder} 中找不到任何 .png 图像。")
+        print(f"❌ ERROR: No .png images found in the GT folder {args.gt_folder}.")
         return None
     for gt_path in tqdm(gt_images, desc="Stage 3: Comparing Images"):
         pred_path = os.path.join(args.pred_folder, gt_path.name)
@@ -203,7 +203,7 @@ def run_stage3_compare(args):
         ssim_scores.append(ssim_metric(pred_batch, gt_batch).item())
         lpips_scores.append(lpips_metric(pred_batch, gt_batch).item())
     if not psnr_scores:
-        print("❌ 错误: 未评估任何图像。请检查两个文件夹中的文件名是否匹配。")
+        print("❌ ERROR: No images were evaluated. Please check if filenames match in both folders.")
         return None
     
     avg_psnr = np.mean(psnr_scores)
@@ -213,9 +213,9 @@ def run_stage3_compare(args):
     print(f"✅ Stage 3 complete for scene.")
     return {"PSNR": avg_psnr, "SSIM": avg_ssim, "LPIPS": avg_lpips}
 
-# --- 5. 最终报告生成与保存函数 ---
+# --- 5. Final Report Generation and Saving Function ---
 def process_and_save_results(all_results):
-    # --- 生成汇总报告字符串 ---
+    # --- Generate Summary Report String ---
     report_lines = []
     header1 = "="*80
     header2 = " " * 28 + "FINAL EVALUATION SUMMARY"
@@ -245,19 +245,19 @@ def process_and_save_results(all_results):
     report_lines.append("="*80)
     summary_string = "\n".join(report_lines)
 
-    # --- 打印到终端 ---
+    # --- Print to Terminal ---
     print(summary_string)
     
-    # --- 保存结果到文件 ---
+    # --- Save Results to File ---
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     
-    # 保存 .txt 纯文本报告
+    # Save .txt plain text report
     txt_filename = f"evaluation_summary_{timestamp}.txt"
     with open(txt_filename, 'w', encoding='utf-8') as f:
         f.write(summary_string)
-    print(f"\n✅ 汇总报告已保存至: {txt_filename}")
+    print(f"\n✅ Summary report saved to: {txt_filename}")
 
-    # 保存 .json 结构化数据
+    # Save .json structured data
     json_filename = f"evaluation_results_{timestamp}.json"
     data_to_save = {
         "run_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -267,12 +267,12 @@ def process_and_save_results(all_results):
     }
     with open(json_filename, 'w', encoding='utf-8') as f:
         json.dump(data_to_save, f, indent=4, ensure_ascii=False)
-    print(f"✅ 详细 JSON 结果已保存至: {json_filename}")
+    print(f"✅ Detailed JSON results saved to: {json_filename}")
 
-# --- 6. 主执行逻辑 ---
+# --- 6. Main Execution Logic ---
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="针对所有数据集的全自动评估流程。")
-    parser.add_argument('--stage', type=str, default='all', choices=['render_3dgs', 'render_nerf', 'compare', 'all'], help="要执行的流程阶段。'all' 会运行全部。")
+    parser = argparse.ArgumentParser(description="Fully automated evaluation pipeline for all datasets.")
+    parser.add_argument('--stage', type=str, default='all', choices=['render_3dgs', 'render_nerf', 'compare', 'all'], help="The pipeline stage to execute. 'all' runs everything.")
     args = parser.parse_args()
     
     all_results = {}
@@ -296,10 +296,10 @@ if __name__ == "__main__":
         if not os.path.exists(scene_args.dataset_path) or \
            not os.path.exists(scene_args.g3dgs_model_path) or \
            not os.path.exists(scene_args.nerf_model_path):
-            print(f"⚠️  警告: 场景 '{scene_name}' 缺少必要的输入文件/目录，将跳过此场景。")
-            print(f"  - 检查数据集路径: {scene_args.dataset_path}")
-            print(f"  - 检查 3DGS 模型路径: {scene_args.g3dgs_model_path}")
-            print(f"  - 检查 NeRF 模型路径: {scene_args.nerf_model_path}")
+            print(f"⚠️  WARNING: Scene '{scene_name}' is missing necessary input files/directories. Skipping this scene.")
+            print(f"  - Checking dataset path: {scene_args.dataset_path}")
+            print(f"  - Checking 3DGS model path: {scene_args.g3dgs_model_path}")
+            print(f"  - Checking NeRF model path: {scene_args.nerf_model_path}")
             continue
 
         try:
@@ -312,8 +312,8 @@ if __name__ == "__main__":
                 if result:
                     all_results[scene_name] = result
         except Exception as e:
-            print(f"❌❌❌ 在处理场景 '{scene_name}' 时发生严重错误: {e}")
-            print(f"将跳过此场景，继续下一个。")
+            print(f"❌❌❌ CRITICAL ERROR occurred while processing scene '{scene_name}': {e}")
+            print(f"Skipping this scene and moving to the next.")
             import traceback
             traceback.print_exc()
 
@@ -321,4 +321,4 @@ if __name__ == "__main__":
         process_and_save_results(all_results)
     
     total_time = time.time() - start_time
-    print(f"\n🎉 全过程执行完毕，总耗时: {total_time // 60:.0f} 分 {total_time % 60:.2f} 秒。")
+    print(f"\n🎉 Entire process finished successfully, Total time: {total_time // 60:.0f} min {total_time % 60:.2f} sec.")
