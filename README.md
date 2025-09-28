@@ -1,4 +1,3 @@
------
 
 ## Getting Started: Setup and Installation
 
