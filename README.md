@@ -6,7 +6,7 @@
 Since this project builds directly on the 3DGS structure, clone your repository into the desired workspace:
 
 ```bash
-git clone [https://github.com/zcemcui/One-step-3DGS2NeRF.git](https://github.com/zcemcui/One-step-3DGS2NeRF.git)
+git clone https://github.com/zcemcui/One-step-3DGS2NeRF.git
 cd One-step-3DGS2NeRF
 ```
 
